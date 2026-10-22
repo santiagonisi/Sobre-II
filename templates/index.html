@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-1">Sobre II</h1>
+<p class="text-muted mb-4">Administración sobre II de licitaciones</p>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+  {% for endpoint, name, description in modules %}
+  <div class="col">
+    <a class="card h-100 text-decoration-none" href="{{ url_for(endpoint) }}">
+      <div class="card-body">
+        <h5 class="card-title">{{ name }}</h5>
+        <p class="card-text text-muted">{{ description }}</p>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

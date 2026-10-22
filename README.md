@@ -4,13 +4,29 @@ Sobre II es un proyecto en desarrollo para organizar la elaboración y el seguim
 
 ## Stack
 
-Pendiente de definir. Aquí se documentarán los lenguajes, frameworks, librerías y herramientas utilizados por el proyecto.
+- **Backend:** Python con Flask
+- **Base de datos:** SQLite (prevista, aún no implementada)
+- **Frontend:** plantillas Jinja2 con Bootstrap 5
+
+## Ejecución
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\pip install -r requirements.txt
+.\.venv\Scripts\python app.py
+```
+
+La aplicación queda disponible en http://127.0.0.1:5000.
 
 ## Estructura del proyecto
 
 ```text
 Sobre2/
+├── app.py
+├── requirements.txt
 ├── templates/
+│   ├── base.html
+│   ├── index.html
 │   ├── analisis_de_precios.html
 │   ├── biblioteca.html
 │   ├── cierre.html
@@ -40,4 +56,4 @@ La estructura refleja los archivos presentes actualmente; se ampliará a medida 
 - **Materiales:** gestión de materiales y sus costos.
 - **Plan de trabajo:** planificación de actividades y tiempos de ejecución.
 
-Los módulos están representados actualmente por plantillas HTML; su comportamiento y alcance se documentarán cuando se implementen.
+Por ahora cada módulo tiene su ruta, su entrada en el menú de navegación y una plantilla en construcción; su comportamiento y alcance se documentarán cuando se implementen.
