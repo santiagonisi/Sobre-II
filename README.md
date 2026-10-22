@@ -1,7 +1,4 @@
-# ✉️🗳️ Sobre II
-<img width="200" height="200" alt="isologo IARSA" src="https://github.com/user-attachments/assets/4bd836db-d7fd-4ec8-a75a-04e7dc8342c4" />
-
-Administración sobre II de licitaciones
+# Sobre II
 
 Sobre II es un proyecto en desarrollo para organizar la elaboración y el seguimiento de presupuestos de obra. La aplicación contempla información de costos, recursos, análisis de precios y planificación del trabajo. Este documento se irá actualizando a medida que se definan e implementen sus componentes.
 
