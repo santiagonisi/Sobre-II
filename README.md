@@ -26,6 +26,9 @@ Sobre2/
 ├── requirements.txt
 ├── instance/
 │   └── sobre_ii.sqlite3
+├── tests/
+│   ├── test_materiales.py
+│   └── test_mano_de_obra.py
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -58,4 +61,6 @@ La estructura refleja los archivos presentes actualmente; se ampliará a medida 
 - **Materiales:** gestión de materiales y sus costos.
 - **Plan de trabajo:** planificación de actividades y tiempos de ejecución.
 
-El módulo Materiales permite crear, editar y eliminar materiales. El porcentaje de pérdidas se ingresa como número (por ejemplo, `2` equivale a `2 %`). El costo de pérdidas es `costo por unidad × porcentaje / 100`, y el costo unitario final es la suma del costo base y las pérdidas. Los datos se guardan en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
+El módulo Materiales permite crear, editar y eliminar materiales. El porcentaje de pérdidas se ingresa como número (por ejemplo, `2` equivale a `2 %`). El costo de pérdidas es `costo por unidad × porcentaje / 100`, y el costo unitario final es la suma del costo base y las pérdidas.
+
+El módulo Mano de obra permite gestionar categorías y salarios por hora, además de configurar los porcentajes comunes. El premio se calcula sobre el salario; mejoras sociales y ART, sobre el jornal directo; otros conceptos, sobre el jornal total. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.

@@ -63,6 +63,46 @@ def init_db():
             )
             """
         )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS labor_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                hourly_salary TEXT NOT NULL
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS labor_rates (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                attendance_bonus TEXT NOT NULL,
+                social_benefits TEXT NOT NULL,
+                art TEXT NOT NULL,
+                other_costs TEXT NOT NULL
+            )
+            """
+        )
+        category_count = db.execute(
+            "SELECT COUNT(*) FROM labor_categories"
+        ).fetchone()[0]
+        if category_count == 0:
+            db.executemany(
+                "INSERT INTO labor_categories (name, hourly_salary) VALUES (?, ?)",
+                [
+                    ("Oficial Esp.", "420.79"),
+                    ("Oficial", "358.55"),
+                    ("Medio Oficial", "330.59"),
+                    ("Ayudante", "303.49"),
+                ],
+            )
+        db.execute(
+            """
+            INSERT OR IGNORE INTO labor_rates
+                (id, attendance_bonus, social_benefits, art, other_costs)
+            VALUES (1, '20', '98', '14', '5')
+            """
+        )
         db.commit()
     finally:
         db.close()
@@ -170,6 +210,117 @@ def materiales():
     )
 
 
+@app.route("/mano-de-obra", methods=["GET", "POST"])
+def mano_de_obra():
+    db = get_db()
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "delete":
+                category_id = int(request.form["id"])
+                cursor = db.execute(
+                    "DELETE FROM labor_categories WHERE id = ?", (category_id,)
+                )
+                if cursor.rowcount == 0:
+                    raise ValueError("No se encontró la categoría para eliminar.")
+                flash("Categoría eliminada.", "success")
+            elif action in {"create", "update"}:
+                name = request.form.get("name", "").strip()
+                if not name:
+                    raise ValueError("Completá la categoría.")
+                salary = parse_decimal(
+                    request.form.get("hourly_salary", ""), "El salario por hora"
+                )
+                values = (name, format(salary, "f"))
+
+                if action == "create":
+                    db.execute(
+                        "INSERT INTO labor_categories (name, hourly_salary) VALUES (?, ?)",
+                        values,
+                    )
+                    flash("Categoría agregada.", "success")
+                else:
+                    category_id = int(request.form["id"])
+                    cursor = db.execute(
+                        """
+                        UPDATE labor_categories SET name = ?, hourly_salary = ?
+                        WHERE id = ?
+                        """,
+                        (*values, category_id),
+                    )
+                    if cursor.rowcount == 0:
+                        raise ValueError("No se encontró la categoría para actualizar.")
+                    flash("Categoría actualizada.", "success")
+            elif action == "save_rates":
+                rates = (
+                    parse_decimal(
+                        request.form.get("attendance_bonus", ""),
+                        "El porcentaje de premio por asistencia",
+                    ),
+                    parse_decimal(
+                        request.form.get("social_benefits", ""),
+                        "El porcentaje de mejoras sociales",
+                    ),
+                    parse_decimal(request.form.get("art", ""), "El porcentaje de ART"),
+                    parse_decimal(
+                        request.form.get("other_costs", ""),
+                        "El porcentaje de otros conceptos",
+                    ),
+                )
+                db.execute(
+                    """
+                    UPDATE labor_rates
+                    SET attendance_bonus = ?, social_benefits = ?, art = ?, other_costs = ?
+                    WHERE id = 1
+                    """,
+                    tuple(format(rate, "f") for rate in rates),
+                )
+                flash("Porcentajes actualizados.", "success")
+            else:
+                raise ValueError("La operación solicitada no es válida.")
+            db.commit()
+        except (KeyError, ValueError) as error:
+            flash(str(error) or "El identificador de la categoría no es válido.", "danger")
+
+        return redirect(url_for("mano_de_obra"))
+
+    rates_row = db.execute("SELECT * FROM labor_rates WHERE id = 1").fetchone()
+    rates = {key: Decimal(rates_row[key]) for key in rates_row.keys() if key != "id"}
+    categories = []
+    for row in db.execute(
+        "SELECT * FROM labor_categories ORDER BY id"
+    ):
+        salary = Decimal(row["hourly_salary"])
+        attendance_bonus = salary * rates["attendance_bonus"] / Decimal("100")
+        direct_journal = salary + attendance_bonus
+        social_benefits = direct_journal * rates["social_benefits"] / Decimal("100")
+        art = direct_journal * rates["art"] / Decimal("100")
+        total_journal = direct_journal + social_benefits + art
+        other_costs = total_journal * rates["other_costs"] / Decimal("100")
+        categories.append(
+            {
+                **dict(row),
+                "salary_display": format_number(salary),
+                "attendance_bonus_display": format_number(attendance_bonus),
+                "direct_journal_display": format_number(direct_journal),
+                "social_benefits_display": format_number(social_benefits),
+                "art_display": format_number(art),
+                "total_journal_display": format_number(total_journal),
+                "other_costs_display": format_number(other_costs),
+                "total_cost_display": format_number(total_journal + other_costs),
+            }
+        )
+
+    return render_template(
+        "mano_de_obra.html",
+        title="Mano de obra",
+        description="Categorías de personal y costo total por hora.",
+        categories=categories,
+        rates={key: format_number(value) for key, value in rates.items()},
+    )
+
+
 def make_view(endpoint, title, description):
     def view():
         return render_template(f"{endpoint}.html", title=title, description=description)
@@ -179,7 +330,7 @@ def make_view(endpoint, title, description):
 
 
 for _endpoint, _title, _description in MODULES:
-    if _endpoint == "materiales":
+    if _endpoint in {"materiales", "mano_de_obra"}:
         continue
     app.add_url_rule(
         f"/{_endpoint.replace('_', '-')}",

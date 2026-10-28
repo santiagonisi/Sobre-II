@@ -3,5 +3,106 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="text-muted">{{ description }}</p>
-<div class="alert alert-secondary">Módulo en construcción.</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+<section class="card mb-4">
+  <div class="card-header">Porcentajes de cálculo</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="save_rates">
+      <div class="col-md-3">
+        <label for="attendance-bonus" class="form-label">Premio por asistencia (%)</label>
+        <input id="attendance-bonus" name="attendance_bonus" class="form-control" value="{{ rates.attendance_bonus }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-3">
+        <label for="social-benefits" class="form-label">Mejoras sociales (%)</label>
+        <input id="social-benefits" name="social_benefits" class="form-control" value="{{ rates.social_benefits }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-2">
+        <label for="art" class="form-label">Seguro A.R.T. (%)</label>
+        <input id="art" name="art" class="form-control" value="{{ rates.art }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-2">
+        <label for="other-costs" class="form-label">Otros (%)</label>
+        <input id="other-costs" name="other_costs" class="form-control" value="{{ rates.other_costs }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-outline-primary">Guardar porcentajes</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">Las tasas se comparten entre todas las categorías. Ingresá 20 para 20 %. Se acepta coma o punto decimal.</small>
+  </div>
+</section>
+
+<section class="card mb-4">
+  <div class="card-header">Agregar categoría</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-8">
+        <label for="new-name" class="form-label">Categoría</label>
+        <input id="new-name" name="name" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label for="new-salary" class="form-label">Salario ($/hora)</label>
+        <input id="new-salary" name="hourly_salary" class="form-control" inputmode="decimal" placeholder="0,00" required>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button type="submit" class="btn btn-primary">Agregar</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover table-bordered align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Categoría</th>
+        <th scope="col" class="text-end">Salario<br>$/hora</th>
+        <th scope="col" class="text-end">Premio por<br>asistencia</th>
+        <th scope="col" class="text-end">Jornal directo<br>$/hora</th>
+        <th scope="col" class="text-end">Mejoras<br>sociales</th>
+        <th scope="col" class="text-end">Seguro A.R.T.</th>
+        <th scope="col" class="text-end">Jornal total<br>$/hora</th>
+        <th scope="col" class="text-end">Otros</th>
+        <th scope="col" class="text-end">Costo total<br>$/hora</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for category in categories %}
+      <tr>
+        <td>
+          <form id="category-{{ category.id }}" method="post">
+            <input type="hidden" name="id" value="{{ category.id }}">
+            <input name="name" class="form-control" value="{{ category.name }}" aria-label="Categoría" required>
+          </form>
+        </td>
+        <td><input form="category-{{ category.id }}" name="hourly_salary" class="form-control text-end" value="{{ category.salary_display }}" inputmode="decimal" aria-label="Salario por hora" required></td>
+        <td class="text-end">{{ category.attendance_bonus_display }}</td>
+        <td class="text-end">{{ category.direct_journal_display }}</td>
+        <td class="text-end">{{ category.social_benefits_display }}</td>
+        <td class="text-end">{{ category.art_display }}</td>
+        <td class="text-end">{{ category.total_journal_display }}</td>
+        <td class="text-end">{{ category.other_costs_display }}</td>
+        <td class="text-end fw-semibold">{{ category.total_cost_display }}</td>
+        <td class="text-nowrap">
+          <button form="category-{{ category.id }}" type="submit" name="action" value="update" class="btn btn-sm btn-outline-primary">Guardar</button>
+          <button form="category-{{ category.id }}" type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" formnovalidate onclick="return confirm('¿Eliminar esta categoría?')">Eliminar</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="10" class="text-center text-muted py-4">Todavía no hay categorías cargadas.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
