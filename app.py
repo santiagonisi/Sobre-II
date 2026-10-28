@@ -123,6 +123,18 @@ def init_db():
             )
             """
         )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS summary_rates (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                general_expenses TEXT NOT NULL,
+                benefits TEXT NOT NULL,
+                financial_costs TEXT NOT NULL,
+                vat TEXT NOT NULL,
+                gross_receipts TEXT NOT NULL
+            )
+            """
+        )
         category_count = db.execute(
             "SELECT COUNT(*) FROM labor_categories"
         ).fetchone()[0]
@@ -149,6 +161,13 @@ def init_db():
                 (id, exchange_rate, residual_percent, annual_interest_percent,
                  repair_percent, lubricant_percent)
             VALUES (1, '0', '20', '8', '70', '30')
+            """
+        )
+        db.execute(
+            """
+            INSERT OR IGNORE INTO summary_rates
+                (id, general_expenses, benefits, financial_costs, vat, gross_receipts)
+            VALUES (1, '5', '10', '3', '21', '2.5')
             """
         )
         db.commit()
@@ -697,6 +716,107 @@ def equipos():
     )
 
 
+@app.route("/cierre", methods=["GET", "POST"])
+def cierre():
+    db = get_db()
+
+    if request.method == "POST":
+        try:
+            rates = (
+                parse_decimal(
+                    request.form.get("general_expenses", ""),
+                    "El porcentaje de gastos generales",
+                ),
+                parse_decimal(
+                    request.form.get("benefits", ""),
+                    "El porcentaje de beneficios",
+                ),
+                parse_decimal(
+                    request.form.get("financial_costs", ""),
+                    "El porcentaje de gastos financieros",
+                ),
+                parse_decimal(request.form.get("vat", ""), "El porcentaje de I.V.A."),
+                parse_decimal(
+                    request.form.get("gross_receipts", ""),
+                    "El porcentaje de ingresos brutos",
+                ),
+            )
+            db.execute(
+                """
+                UPDATE summary_rates
+                SET general_expenses = ?, benefits = ?, financial_costs = ?,
+                    vat = ?, gross_receipts = ?
+                WHERE id = 1
+                """,
+                tuple(format(rate, "f") for rate in rates),
+            )
+            db.commit()
+            flash("Porcentajes del coeficiente actualizados.", "success")
+        except ValueError as error:
+            flash(str(error), "danger")
+        return redirect(url_for("cierre"))
+
+    rates_row = db.execute("SELECT * FROM summary_rates WHERE id = 1").fetchone()
+    rates = {
+        key: Decimal(rates_row[key])
+        for key in rates_row.keys()
+        if key != "id"
+    }
+
+    net_cost = Decimal("1")
+    general_expenses = net_cost * rates["general_expenses"] / Decimal("100")
+    subtotal_2 = net_cost + general_expenses
+    benefits = subtotal_2 * rates["benefits"] / Decimal("100")
+    financial_costs = subtotal_2 * rates["financial_costs"] / Decimal("100")
+    subtotal_3 = subtotal_2 + benefits + financial_costs
+    vat = subtotal_3 * rates["vat"] / Decimal("100")
+    gross_receipts = subtotal_3 * rates["gross_receipts"] / Decimal("100")
+    total = subtotal_3 + vat + gross_receipts
+
+    def format_coefficient(value):
+        return f"{value:.4f}".replace(".", ",")
+
+    breakdown = [
+        ("Costo neto (C.C.)", format_coefficient(net_cost), "Base"),
+        (
+            "Gastos generales (D)",
+            format_coefficient(general_expenses),
+            f"{format_number(rates['general_expenses'])} % de (1)",
+        ),
+        ("Sub-total 2", format_coefficient(subtotal_2), ""),
+        (
+            "Beneficios (E)",
+            format_coefficient(benefits),
+            f"{format_number(rates['benefits'])} % de (2)",
+        ),
+        (
+            "Gastos financieros (F)",
+            format_coefficient(financial_costs),
+            f"{format_number(rates['financial_costs'])} % de (2)",
+        ),
+        ("Sub-total 3", format_coefficient(subtotal_3), ""),
+        (
+            "I.V.A. (G)",
+            format_coefficient(vat),
+            f"{format_number(rates['vat'])} % de (3)",
+        ),
+        (
+            "Ingresos brutos (H)",
+            format_coefficient(gross_receipts),
+            f"{format_number(rates['gross_receipts'])} % de (3)",
+        ),
+        ("Total 3 + G + H", format_coefficient(total), ""),
+    ]
+    return render_template(
+        "cierre.html",
+        title="Coeficiente de resumen",
+        description="Cálculo de los componentes porcentuales del presupuesto.",
+        rates={key: format_number(value) for key, value in rates.items()},
+        breakdown=breakdown,
+        coefficient=format_coefficient(total / net_cost),
+    )
+
+
 def make_view(endpoint, title, description):
     def view():
         return render_template(f"{endpoint}.html", title=title, description=description)
@@ -706,7 +826,13 @@ def make_view(endpoint, title, description):
 
 
 for _endpoint, _title, _description in MODULES:
-    if _endpoint in {"materiales", "transportes", "mano_de_obra", "equipos"}:
+    if _endpoint in {
+        "materiales",
+        "transportes",
+        "mano_de_obra",
+        "equipos",
+        "cierre",
+    }:
         continue
     app.add_url_rule(
         f"/{_endpoint.replace('_', '-')}",

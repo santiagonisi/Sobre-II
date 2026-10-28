@@ -3,5 +3,74 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="text-muted">{{ description }}</p>
-<div class="alert alert-secondary">Módulo en construcción.</div>
+<div class="alert alert-info">
+  Calculadora temporal: los porcentajes se guardan como valores comunes y todavía no están asociados a una obra. Al incorporar presupuestos, podrán configurarse por cada uno.
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+<section class="card mb-4">
+  <div class="card-header">Porcentajes editables</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <div class="col-md-4 col-lg">
+        <label for="general-expenses" class="form-label">Gastos generales (D) %</label>
+        <input id="general-expenses" name="general_expenses" class="form-control" value="{{ rates.general_expenses }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg">
+        <label for="benefits" class="form-label">Beneficios (E) %</label>
+        <input id="benefits" name="benefits" class="form-control" value="{{ rates.benefits }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg">
+        <label for="financial-costs" class="form-label">Gastos financieros (F) %</label>
+        <input id="financial-costs" name="financial_costs" class="form-control" value="{{ rates.financial_costs }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg">
+        <label for="vat" class="form-label">I.V.A. (G) %</label>
+        <input id="vat" name="vat" class="form-control" value="{{ rates.vat }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg">
+        <label for="gross-receipts" class="form-label">Ingresos brutos (H) %</label>
+        <input id="gross-receipts" name="gross_receipts" class="form-control" value="{{ rates.gross_receipts }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-auto d-grid">
+        <button type="submit" class="btn btn-primary">Actualizar cálculo</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">Los valores iniciales (5 %, 10 %, 3 %, 21 % y 2,5 %) son los del ejemplo. Se acepta coma o punto decimal.</small>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th scope="col">Detalle</th>
+        <th scope="col">Base de cálculo</th>
+        <th scope="col" class="text-end">Coeficiente</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for label, amount, basis in breakdown %}
+      <tr>
+        <th scope="row" class="{{ 'table-secondary' if 'Sub-total' in label or 'Total ' in label }}">{{ label }}</th>
+        <td>{{ basis }}</td>
+        <td class="text-end {{ 'fw-semibold' if 'Sub-total' in label or 'Total ' in label }}">{{ amount }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-primary">
+        <th scope="row" colspan="2">Coeficiente de resumen</th>
+        <td class="text-end fw-bold fs-5">{{ coefficient }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<p class="small text-muted">Cálculo basado en las bases visibles de la planilla: gastos generales sobre (1); beneficios y gastos financieros sobre (2); I.V.A. e ingresos brutos sobre (3). La base de costo neto es 1.</p>
 {% endblock %}

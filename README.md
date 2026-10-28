@@ -30,7 +30,8 @@ Sobre2/
 │   ├── test_materiales.py
 │   ├── test_mano_de_obra.py
 │   ├── test_transportes.py
-│   └── test_equipos.py
+│   ├── test_equipos.py
+│   └── test_cierre.py
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -71,4 +72,8 @@ El módulo Mano de obra permite gestionar categorías y salarios por hora, adem�
 
 El módulo Transportes vincula cada registro con un material para obtener su unidad y porcentaje de pérdidas. Calcula el costo sin pérdidas como `distancia × tarifa por unidad/km`; el costo con pérdidas suma a ese resultado el porcentaje de pérdidas del material.
 
-El módulo Equipos mantiene un catálogo vacío y reutilizable, sin precargar los equipos del ejemplo. Permite editar la cotización USD, el valor residual (20 %), interés anual (8 %), reparaciones/repuestos (70 %) y lubricantes (30 %). Cada equipo calcula costo actual en pesos, valor residual, amortización e intereses por hora con la fórmula de la planilla, reparaciones, combustible, lubricantes y costo total por hora. La cotización inicial queda sin definir y debe cargarse antes de agregar equipos. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
+El módulo Equipos mantiene un catálogo vacío y reutilizable, sin precargar los equipos del ejemplo. Permite editar la cotización USD, el valor residual (20 %), interés anual (8 %), reparaciones/repuestos (70 %) y lubricantes (30 %). Cada equipo calcula costo actual en pesos, valor residual, amortización e intereses por hora con la fórmula de la planilla, reparaciones, combustible, lubricantes y costo total por hora. La cotización inicial queda sin definir y debe cargarse antes de agregar equipos.
+
+El módulo Cierre presenta una calculadora temporal del coeficiente de resumen, con porcentajes editables. Los valores iniciales (5 %, 10 %, 3 %, 21 % y 2,5 %) provienen de la planilla de ejemplo; actualmente se comparten y se guardan en SQLite, no están vinculados a una obra específica.
+
+Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
