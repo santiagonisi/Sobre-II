@@ -3,5 +3,154 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="text-muted">{{ description }}</p>
-<div class="alert alert-secondary">Módulo en construcción.</div>
+<p>Este catálogo es reutilizable. Los equipos se incorporarán a cada obra cuando esté disponible la gestión de presupuestos; no hay equipos de ejemplo precargados.</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+<section class="card mb-4">
+  <div class="card-header">Parámetros de cálculo</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="save_settings">
+      <div class="col-md-4 col-lg-2">
+        <label for="exchange-rate" class="form-label">Cotización USD ($/USD)</label>
+        <input id="exchange-rate" name="exchange_rate" class="form-control" value="{{ settings.exchange_rate }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="residual-percent" class="form-label">Valor residual (%)</label>
+        <input id="residual-percent" name="residual_percent" class="form-control" value="{{ settings.residual_percent }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="interest-percent" class="form-label">Interés anual (%)</label>
+        <input id="interest-percent" name="annual_interest_percent" class="form-control" value="{{ settings.annual_interest_percent }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="repair-percent" class="form-label">Reparaciones/repuestos (%)</label>
+        <input id="repair-percent" name="repair_percent" class="form-control" value="{{ settings.repair_percent }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="lubricant-percent" class="form-label">Lubricantes (% del combustible)</label>
+        <input id="lubricant-percent" name="lubricant_percent" class="form-control" value="{{ settings.lubricant_percent }}" inputmode="decimal" required>
+      </div>
+      <div class="col-md-4 col-lg-2 d-grid">
+        <button type="submit" class="btn btn-outline-primary">Guardar parámetros</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">Valores iniciales según la planilla: residual 20 %, interés 8 %, reparaciones 70 % y lubricantes 30 %. La cotización del dólar debe definirse para cada presupuesto. Se acepta coma o punto decimal.</small>
+  </div>
+</section>
+
+{% if exchange_rate_configured %}
+<section class="card mb-4">
+  <div class="card-header">Agregar equipo al catálogo</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-4 col-lg-3">
+        <label for="new-designation" class="form-label">Designación</label>
+        <input id="new-designation" name="designation" class="form-control" required>
+      </div>
+      <div class="col-md-2 col-lg-1">
+        <label for="new-horsepower" class="form-label">HP</label>
+        <input id="new-horsepower" name="horsepower" class="form-control" inputmode="decimal" value="0" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-cost" class="form-label">Costo actual (USD)</label>
+        <input id="new-cost" name="cost_usd" class="form-control" inputmode="decimal" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-useful-life" class="form-label">Vida útil (h)</label>
+        <input id="new-useful-life" name="useful_life_hours" class="form-control" inputmode="decimal" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-annual-use" class="form-label">Uso anual (h)</label>
+        <input id="new-annual-use" name="annual_use_hours" class="form-control" inputmode="decimal" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-fuel-type" class="form-label">Tipo combustible</label>
+        <input id="new-fuel-type" name="fuel_type" class="form-control" placeholder="Diésel, nafta, no aplica" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-fuel-price" class="form-label">Precio combustible ($/lt)</label>
+        <input id="new-fuel-price" name="fuel_price_per_liter" class="form-control" inputmode="decimal" value="0" required>
+      </div>
+      <div class="col-md-3 col-lg-2">
+        <label for="new-fuel-consumption" class="form-label">Consumo (lt/h)</label>
+        <input id="new-fuel-consumption" name="fuel_consumption_per_hour" class="form-control" inputmode="decimal" value="0" required>
+      </div>
+      <div class="col-md-3 col-lg-2 d-grid">
+        <button type="submit" class="btn btn-primary">Agregar equipo</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">Según la planilla, combustible y lubricantes se calculan cuando el tipo es “diesel”; para equipos sin combustible, indicá otro tipo y consumo cero.</small>
+  </div>
+</section>
+{% else %}
+<div class="alert alert-warning">Configurá la cotización del dólar para habilitar la carga de equipos.</div>
+{% endif %}
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover table-bordered align-middle small">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Designación</th>
+        <th scope="col">HP</th>
+        <th scope="col">Costo actual (USD)</th>
+        <th scope="col">Costo actual ($)</th>
+        <th scope="col">Valor residual ($)</th>
+        <th scope="col">Vida útil (h)</th>
+        <th scope="col">Uso anual (h)</th>
+        <th scope="col">Amortización e intereses ($/h)</th>
+        <th scope="col">Reparaciones y repuestos ($/h)</th>
+        <th scope="col">Tipo combustible</th>
+        <th scope="col">Precio ($/lt)</th>
+        <th scope="col">Consumo (lt/h)</th>
+        <th scope="col">Combustible ($/h)</th>
+        <th scope="col">Lubricantes ($/h)</th>
+        <th scope="col">Combustible y lubricantes ($/h)</th>
+        <th scope="col">Total hora ($/h)</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in equipment %}
+      <tr>
+        <td>
+          <form id="equipment-{{ item.id }}" method="post">
+            <input type="hidden" name="id" value="{{ item.id }}">
+            <input name="designation" class="form-control form-control-sm" value="{{ item.designation }}" aria-label="Designación" required>
+          </form>
+        </td>
+        <td><input form="equipment-{{ item.id }}" name="horsepower" class="form-control form-control-sm" value="{{ item.horsepower_display }}" inputmode="decimal" aria-label="HP" required></td>
+        <td><input form="equipment-{{ item.id }}" name="cost_usd" class="form-control form-control-sm" value="{{ item.cost_usd_display }}" inputmode="decimal" aria-label="Costo actual en USD" required></td>
+        <td class="text-end">{{ item.current_cost_display }}</td>
+        <td class="text-end">{{ item.residual_value_display }}</td>
+        <td><input form="equipment-{{ item.id }}" name="useful_life_hours" class="form-control form-control-sm" value="{{ item.useful_life_display }}" inputmode="decimal" aria-label="Vida útil en horas" required></td>
+        <td><input form="equipment-{{ item.id }}" name="annual_use_hours" class="form-control form-control-sm" value="{{ item.annual_use_display }}" inputmode="decimal" aria-label="Uso anual en horas" required></td>
+        <td class="text-end">{{ item.amortization_and_interest_display }}</td>
+        <td class="text-end">{{ item.repairs_per_hour_display }}</td>
+        <td><input form="equipment-{{ item.id }}" name="fuel_type" class="form-control form-control-sm" value="{{ item.fuel_type }}" aria-label="Tipo de combustible" required></td>
+        <td><input form="equipment-{{ item.id }}" name="fuel_price_per_liter" class="form-control form-control-sm" value="{{ item.fuel_price_display }}" inputmode="decimal" aria-label="Precio del combustible por litro" required></td>
+        <td><input form="equipment-{{ item.id }}" name="fuel_consumption_per_hour" class="form-control form-control-sm" value="{{ item.fuel_consumption_display }}" inputmode="decimal" aria-label="Consumo de combustible por hora" required></td>
+        <td class="text-end">{{ item.fuel_cost_per_hour_display }}</td>
+        <td class="text-end">{{ item.lubricant_cost_per_hour_display }}</td>
+        <td class="text-end">{{ item.fuel_and_lubricants_display }}</td>
+        <td class="text-end fw-semibold">{{ item.total_cost_per_hour_display }}</td>
+        <td class="text-nowrap">
+          <button form="equipment-{{ item.id }}" type="submit" name="action" value="update" class="btn btn-sm btn-outline-primary">Guardar</button>
+          <button form="equipment-{{ item.id }}" type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" formnovalidate onclick="return confirm('¿Eliminar este equipo del catálogo?')">Eliminar</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="17" class="text-center text-muted py-4">El catálogo está vacío. Agregá solo los equipos que quieras conservar.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -29,7 +29,8 @@ Sobre2/
 ├── tests/
 │   ├── test_materiales.py
 │   ├── test_mano_de_obra.py
-│   └── test_transportes.py
+│   ├── test_transportes.py
+│   └── test_equipos.py
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -68,4 +69,6 @@ El módulo Materiales permite crear, editar y eliminar materiales. El porcentaje
 
 El módulo Mano de obra permite gestionar categorías y salarios por hora, además de configurar los porcentajes comunes. El premio se calcula sobre el salario; mejoras sociales y ART, sobre el jornal directo; otros conceptos, sobre el jornal total.
 
-El módulo Transportes vincula cada registro con un material para obtener su unidad y porcentaje de pérdidas. Calcula el costo sin pérdidas como `distancia × tarifa por unidad/km`; el costo con pérdidas suma a ese resultado el porcentaje de pérdidas del material. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
+El módulo Transportes vincula cada registro con un material para obtener su unidad y porcentaje de pérdidas. Calcula el costo sin pérdidas como `distancia × tarifa por unidad/km`; el costo con pérdidas suma a ese resultado el porcentaje de pérdidas del material.
+
+El módulo Equipos mantiene un catálogo vacío y reutilizable, sin precargar los equipos del ejemplo. Permite editar la cotización USD, el valor residual (20 %), interés anual (8 %), reparaciones/repuestos (70 %) y lubricantes (30 %). Cada equipo calcula costo actual en pesos, valor residual, amortización e intereses por hora con la fórmula de la planilla, reparaciones, combustible, lubricantes y costo total por hora. La cotización inicial queda sin definir y debe cargarse antes de agregar equipos. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
