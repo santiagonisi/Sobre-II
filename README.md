@@ -24,6 +24,8 @@ La aplicación queda disponible en http://127.0.0.1:5000.
 Sobre2/
 ├── app.py
 ├── requirements.txt
+├── instance/
+│   └── sobre_ii.sqlite3
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -56,4 +58,4 @@ La estructura refleja los archivos presentes actualmente; se ampliará a medida 
 - **Materiales:** gestión de materiales y sus costos.
 - **Plan de trabajo:** planificación de actividades y tiempos de ejecución.
 
-Por ahora cada módulo tiene su ruta, su entrada en el menú de navegación y una plantilla en construcción; su comportamiento y alcance se documentarán cuando se implementen.
+El módulo Materiales permite crear, editar y eliminar materiales. El porcentaje de pérdidas se ingresa como número (por ejemplo, `2` equivale a `2 %`). El costo de pérdidas es `costo por unidad × porcentaje / 100`, y el costo unitario final es la suma del costo base y las pérdidas. Los datos se guardan en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.

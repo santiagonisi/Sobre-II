@@ -3,5 +3,80 @@
 {% block content %}
 <h1>{{ title }}</h1>
 <p class="text-muted">{{ description }}</p>
-<div class="alert alert-secondary">Módulo en construcción.</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+<section class="card mb-4">
+  <div class="card-header">Agregar material</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-5">
+        <label for="new-name" class="form-label">Material</label>
+        <input id="new-name" name="name" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label for="new-unit" class="form-label">Unidad</label>
+        <input id="new-unit" name="unit" class="form-control" placeholder="kg, Tn., lt..." required>
+      </div>
+      <div class="col-md-2">
+        <label for="new-cost" class="form-label">Costo por unidad</label>
+        <input id="new-cost" name="unit_cost" class="form-control" inputmode="decimal" placeholder="0,00" required>
+      </div>
+      <div class="col-md-2">
+        <label for="new-loss" class="form-label">Pérdidas (%)</label>
+        <input id="new-loss" name="loss_percent" class="form-control" inputmode="decimal" value="0" required>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button type="submit" class="btn btn-primary">Agregar</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">Ingresá el porcentaje como número: 2 equivale a 2 %. Se acepta coma o punto decimal.</small>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Material</th>
+        <th scope="col">Unidad</th>
+        <th scope="col" class="text-end">Costo por unidad</th>
+        <th scope="col" class="text-end">Pérdidas (%)</th>
+        <th scope="col" class="text-end">Costo de pérdidas</th>
+        <th scope="col" class="text-end">Costo unitario final</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for material in materials %}
+      <tr>
+        <td>
+          <form id="material-{{ material.id }}" method="post">
+          <input type="hidden" name="id" value="{{ material.id }}">
+            <input name="name" class="form-control" value="{{ material.name }}" aria-label="Material" required>
+          </form>
+        </td>
+        <td><input form="material-{{ material.id }}" name="unit" class="form-control" value="{{ material.unit }}" aria-label="Unidad" required></td>
+        <td><input form="material-{{ material.id }}" name="unit_cost" class="form-control text-end" value="{{ material.unit_cost_display }}" inputmode="decimal" aria-label="Costo por unidad" required></td>
+        <td><input form="material-{{ material.id }}" name="loss_percent" class="form-control text-end" value="{{ material.loss_percent_display }}" inputmode="decimal" aria-label="Pérdidas en porcentaje" required></td>
+        <td class="text-end">{{ material.loss_cost }}</td>
+        <td class="text-end fw-semibold">{{ material.total_unit_cost }}</td>
+        <td class="text-nowrap">
+          <button form="material-{{ material.id }}" type="submit" name="action" value="update" class="btn btn-sm btn-outline-primary">Guardar</button>
+          <button form="material-{{ material.id }}" type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" formnovalidate onclick="return confirm('¿Eliminar este material?')">Eliminar</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">Todavía no hay materiales cargados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
