@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Sobre II{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="text-muted">{{ description }}</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+{% if materials %}
+<section class="card mb-4">
+  <div class="card-header">Agregar transporte</div>
+  <div class="card-body">
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-3">
+        <label for="new-material" class="form-label">Material</label>
+        <select id="new-material" name="material_id" class="form-select" required>
+          <option value="">Seleccioná un material</option>
+          {% for material in materials %}
+          <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="new-origin" class="form-label">Origen</label>
+        <input id="new-origin" name="origin" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label for="new-distance" class="form-label">Distancia (km)</label>
+        <input id="new-distance" name="distance_km" class="form-control" inputmode="decimal" required>
+      </div>
+      <div class="col-md-3">
+        <label for="new-rate" class="form-label">Transporte por unidad/km</label>
+        <input id="new-rate" name="rate_per_unit_km" class="form-control" inputmode="decimal" required>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">Agregar</button>
+      </div>
+    </form>
+    <small class="form-text text-muted">El material aporta automáticamente la unidad y el porcentaje de pérdidas. Se acepta coma o punto decimal.</small>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover table-bordered align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Material</th>
+        <th scope="col">Origen</th>
+        <th scope="col" class="text-end">Distancia (km)</th>
+        <th scope="col">Unidad</th>
+        <th scope="col" class="text-end">Transporte por unidad/km</th>
+        <th scope="col" class="text-end">Costo sin pérdidas</th>
+        <th scope="col" class="text-end">Pérdidas (%)</th>
+        <th scope="col" class="text-end">Costo de pérdidas</th>
+        <th scope="col" class="text-end">Costo con pérdidas</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for transport in transports %}
+      <tr>
+        <td>
+          <form id="transport-{{ transport.id }}" method="post">
+            <input type="hidden" name="id" value="{{ transport.id }}">
+            <select name="material_id" class="form-select" aria-label="Material" required>
+              {% for material in materials %}
+              <option value="{{ material.id }}" {{ 'selected' if material.id == transport.material_id }}>{{ material.name }} ({{ material.unit }})</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td><input form="transport-{{ transport.id }}" name="origin" class="form-control" value="{{ transport.origin }}" aria-label="Origen" required></td>
+        <td><input form="transport-{{ transport.id }}" name="distance_km" class="form-control text-end" value="{{ transport.distance_display }}" inputmode="decimal" aria-label="Distancia en kilómetros" required></td>
+        <td>{{ transport.unit }}</td>
+        <td><input form="transport-{{ transport.id }}" name="rate_per_unit_km" class="form-control text-end" value="{{ transport.rate_display }}" inputmode="decimal" aria-label="Transporte por unidad y kilómetro" required></td>
+        <td class="text-end">{{ transport.cost_without_losses }}</td>
+        <td class="text-end">{{ transport.loss_percent_display }}</td>
+        <td class="text-end">{{ transport.loss_cost }}</td>
+        <td class="text-end fw-semibold">{{ transport.cost_with_losses }}</td>
+        <td class="text-nowrap">
+          <button form="transport-{{ transport.id }}" type="submit" name="action" value="update" class="btn btn-sm btn-outline-primary">Guardar</button>
+          <button form="transport-{{ transport.id }}" type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" formnovalidate onclick="return confirm('¿Eliminar este transporte?')">Eliminar</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="10" class="text-center text-muted py-4">Todavía no hay transportes cargados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">Primero cargá al menos un material para asociarlo a su transporte. <a href="{{ url_for('materiales') }}" class="alert-link">Ir a Materiales</a>.</div>
+{% endif %}
+{% endblock %}

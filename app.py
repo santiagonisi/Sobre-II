@@ -12,6 +12,7 @@ app.config["DATABASE"] = os.path.join(app.instance_path, "sobre_ii.sqlite3")
 # (endpoint, titulo, descripcion); el orden define el menu de navegacion
 MODULES = [
     ("materiales", "Materiales", "Gestión de materiales y sus costos."),
+    ("transportes", "Transportes", "Costos de transporte asociados a materiales."),
     ("mano_de_obra", "Mano de obra", "Gestión de recursos humanos y sus costos."),
     ("equipos", "Equipos", "Gestión de equipos y sus costos."),
     ("analisis_de_precios", "Análisis de precios", "Composición de precios unitarios."),
@@ -38,6 +39,7 @@ def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(current_app.config["DATABASE"])
         g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
 
@@ -60,6 +62,17 @@ def init_db():
                 unit TEXT NOT NULL,
                 unit_cost TEXT NOT NULL,
                 loss_percent TEXT NOT NULL
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS transports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                material_id INTEGER NOT NULL REFERENCES materials(id) ON DELETE RESTRICT,
+                origin TEXT NOT NULL,
+                distance_km TEXT NOT NULL,
+                rate_per_unit_km TEXT NOT NULL
             )
             """
         )
@@ -184,6 +197,12 @@ def materiales():
                 raise ValueError("La operación solicitada no es válida.")
         except (KeyError, ValueError) as error:
             flash(str(error) or "El identificador del material no es válido.", "danger")
+        except sqlite3.IntegrityError:
+            db.rollback()
+            flash(
+                "No se puede eliminar el material porque está asociado a un transporte.",
+                "danger",
+            )
 
         return redirect(url_for("materiales"))
 
@@ -207,6 +226,118 @@ def materiales():
         title="Materiales",
         description="Gestión de materiales y sus costos.",
         materials=materials,
+    )
+
+
+@app.route("/transportes", methods=["GET", "POST"])
+def transportes():
+    db = get_db()
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "delete":
+                transport_id = int(request.form["id"])
+                cursor = db.execute("DELETE FROM transports WHERE id = ?", (transport_id,))
+                if cursor.rowcount == 0:
+                    raise ValueError("No se encontró el transporte para eliminar.")
+                flash("Transporte eliminado.", "success")
+            elif action in {"create", "update"}:
+                try:
+                    material_id = int(request.form.get("material_id", ""))
+                except ValueError:
+                    raise ValueError("Seleccioná un material válido.") from None
+                material = db.execute(
+                    "SELECT id FROM materials WHERE id = ?", (material_id,)
+                ).fetchone()
+                if material is None:
+                    raise ValueError("Seleccioná un material válido.")
+
+                origin = request.form.get("origin", "").strip()
+                if not origin:
+                    raise ValueError("Completá el origen.")
+                distance = parse_decimal(
+                    request.form.get("distance_km", ""), "La distancia"
+                )
+                rate = parse_decimal(
+                    request.form.get("rate_per_unit_km", ""),
+                    "El costo de transporte por unidad y kilómetro",
+                )
+                values = (
+                    material_id,
+                    origin,
+                    format(distance, "f"),
+                    format(rate, "f"),
+                )
+
+                if action == "create":
+                    db.execute(
+                        """
+                        INSERT INTO transports
+                            (material_id, origin, distance_km, rate_per_unit_km)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        values,
+                    )
+                    flash("Transporte agregado.", "success")
+                else:
+                    transport_id = int(request.form["id"])
+                    cursor = db.execute(
+                        """
+                        UPDATE transports
+                        SET material_id = ?, origin = ?, distance_km = ?,
+                            rate_per_unit_km = ?
+                        WHERE id = ?
+                        """,
+                        (*values, transport_id),
+                    )
+                    if cursor.rowcount == 0:
+                        raise ValueError("No se encontró el transporte para actualizar.")
+                    flash("Transporte actualizado.", "success")
+            else:
+                raise ValueError("La operación solicitada no es válida.")
+            db.commit()
+        except (KeyError, ValueError) as error:
+            flash(str(error) or "El identificador del transporte no es válido.", "danger")
+
+        return redirect(url_for("transportes"))
+
+    materials = db.execute(
+        "SELECT id, name, unit FROM materials ORDER BY name COLLATE NOCASE"
+    ).fetchall()
+    transports = []
+    rows = db.execute(
+        """
+        SELECT t.*, m.name AS material_name, m.unit, m.loss_percent
+        FROM transports AS t
+        JOIN materials AS m ON m.id = t.material_id
+        ORDER BY m.name COLLATE NOCASE, t.origin COLLATE NOCASE, t.id
+        """
+    )
+    for row in rows:
+        distance = Decimal(row["distance_km"])
+        rate = Decimal(row["rate_per_unit_km"])
+        loss_percent = Decimal(row["loss_percent"])
+        cost_without_losses = distance * rate
+        loss_cost = cost_without_losses * loss_percent / Decimal("100")
+        transports.append(
+            {
+                **dict(row),
+                "distance_display": format_number(distance),
+                "rate_display": format_number(rate),
+                "loss_percent_display": format_number(loss_percent),
+                "cost_without_losses": format_number(cost_without_losses),
+                "loss_cost": format_number(loss_cost),
+                "cost_with_losses": format_number(cost_without_losses + loss_cost),
+            }
+        )
+
+    return render_template(
+        "transportes.html",
+        title="Transportes",
+        description="Costos de transporte por material, origen y distancia.",
+        materials=materials,
+        transports=transports,
     )
 
 
@@ -330,7 +461,7 @@ def make_view(endpoint, title, description):
 
 
 for _endpoint, _title, _description in MODULES:
-    if _endpoint in {"materiales", "mano_de_obra"}:
+    if _endpoint in {"materiales", "transportes", "mano_de_obra"}:
         continue
     app.add_url_rule(
         f"/{_endpoint.replace('_', '-')}",

@@ -28,7 +28,8 @@ Sobre2/
 │   └── sobre_ii.sqlite3
 ├── tests/
 │   ├── test_materiales.py
-│   └── test_mano_de_obra.py
+│   ├── test_mano_de_obra.py
+│   └── test_transportes.py
 ├── templates/
 │   ├── base.html
 │   ├── index.html
@@ -41,6 +42,7 @@ Sobre2/
 │   ├── equipos.html
 │   ├── mano_de_obra.html
 │   ├── materiales.html
+│   ├── transportes.html
 │   └── plan_de_trabajo.html
 ├── .gitignore
 └── README.md
@@ -59,8 +61,11 @@ La estructura refleja los archivos presentes actualmente; se ampliará a medida 
 - **Equipos:** gestión de equipos y sus costos.
 - **Mano de obra:** gestión de recursos humanos y sus costos.
 - **Materiales:** gestión de materiales y sus costos.
+- **Transportes:** cálculo de costos de traslado asociados a materiales.
 - **Plan de trabajo:** planificación de actividades y tiempos de ejecución.
 
 El módulo Materiales permite crear, editar y eliminar materiales. El porcentaje de pérdidas se ingresa como número (por ejemplo, `2` equivale a `2 %`). El costo de pérdidas es `costo por unidad × porcentaje / 100`, y el costo unitario final es la suma del costo base y las pérdidas.
 
-El módulo Mano de obra permite gestionar categorías y salarios por hora, además de configurar los porcentajes comunes. El premio se calcula sobre el salario; mejoras sociales y ART, sobre el jornal directo; otros conceptos, sobre el jornal total. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
+El módulo Mano de obra permite gestionar categorías y salarios por hora, además de configurar los porcentajes comunes. El premio se calcula sobre el salario; mejoras sociales y ART, sobre el jornal directo; otros conceptos, sobre el jornal total.
+
+El módulo Transportes vincula cada registro con un material para obtener su unidad y porcentaje de pérdidas. Calcula el costo sin pérdidas como `distancia × tarifa por unidad/km`; el costo con pérdidas suma a ese resultado el porcentaje de pérdidas del material. Los módulos implementados guardan sus datos en SQLite dentro de `instance/`, carpeta excluida de Git. Los demás módulos tienen una ruta, entrada en el menú y plantilla inicial; su comportamiento se documentará a medida que se implemente.
